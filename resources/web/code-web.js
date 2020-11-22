@@ -32,6 +32,7 @@ const WEB_PLAYGROUND_VERSION = '0.0.10';
 
 const args = minimist(process.argv, {
 	boolean: [
+		'no-server',
 		'no-launch',
 		'help',
 		'verbose',
@@ -52,6 +53,7 @@ const args = minimist(process.argv, {
 if (args.help) {
 	console.log(
 		'yarn web [options]\n' +
+		' --no-server      Init and exit\n' +
 		' --no-launch      Do not open VSCode web in the browser\n' +
 		' --wrap-iframe    Wrap the Web Worker Extension Host in an iframe\n' +
 		' --trusted-types  Enable trusted types (report only)\n' +
@@ -260,26 +262,28 @@ const requestHandler = (req, res) => {
 	}
 };
 
-const server = http.createServer(requestHandler);
-server.listen(LOCAL_PORT, () => {
-	if (LOCAL_PORT !== PORT) {
-		console.log(`Operating location at         http://0.0.0.0:${LOCAL_PORT}`);
-	}
-	console.log(`Web UI available at           ${SCHEME}://${AUTHORITY}`);
-});
-server.on('error', err => {
-	console.error(`Error occurred in server:`);
-	console.error(err);
-});
+if (args.server !== false) {
+	const server = http.createServer(requestHandler);
+	server.listen(LOCAL_PORT, () => {
+		if (LOCAL_PORT !== PORT) {
+			console.log(`Operating location at         http://0.0.0.0:${LOCAL_PORT}`);
+		}
+		console.log(`Web UI available at           ${SCHEME}://${AUTHORITY}`);
+	});
+	server.on('error', err => {
+		console.error(`Error occurred in server:`);
+		console.error(err);
+	});
 
-const secondaryServer = http.createServer(requestHandler);
-secondaryServer.listen(SECONDARY_PORT, () => {
-	console.log(`Secondary server available at ${SCHEME}://${HOST}:${SECONDARY_PORT}`);
-});
-secondaryServer.on('error', err => {
-	console.error(`Error occurred in server:`);
-	console.error(err);
-});
+	const secondaryServer = http.createServer(requestHandler);
+	secondaryServer.listen(SECONDARY_PORT, () => {
+		console.log(`Secondary server available at ${SCHEME}://${HOST}:${SECONDARY_PORT}`);
+	});
+	secondaryServer.on('error', err => {
+		console.error(`Error occurred in server:`);
+		console.error(err);
+	});
+}
 
 /**
  * @param {import('http').IncomingMessage} req
@@ -612,6 +616,6 @@ async function serveFile(req, res, filePath, responseHeaders = Object.create(nul
 	}
 }
 
-if (args.launch !== false) {
+if (args.server !== false && args.launch !== false) {
 	opn(`${SCHEME}://${HOST}:${PORT}`);
 }
